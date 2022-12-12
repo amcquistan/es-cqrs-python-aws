@@ -1,0 +1,1 @@
+from availability.service.uow import AvailabilityCommandHandler
