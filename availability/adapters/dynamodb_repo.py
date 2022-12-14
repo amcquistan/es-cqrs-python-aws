@@ -3,7 +3,6 @@
 from dataclasses import asdict
 from typing import Dict, List
 
-
 from boto3.dynamodb.conditions import Key
 
 from availability.domain.event import Event
@@ -26,6 +25,19 @@ def event_from_ddb_item(item: Dict) -> Event:
     else:
       event_data[k] = v
   return Event(**event_data)
+
+
+def availability_to_ddb_item(availability: Availability) -> Dict:
+  data = asdict(availability)
+  return to_isodatetime(data)
+
+
+def availability_from_ddb_item(item: Dict) -> Availability:
+  return Availability(
+    user_id=item['user_id'],
+    available_at=from_isodatetime(item['available_at']),
+    appointment_id=item["appointment_id"]
+  )
 
 
 class DynamoEventStoreRepo(EventStoreRepo):
@@ -58,16 +70,34 @@ class DynamoEventStoreRepo(EventStoreRepo):
 
 
 class DynamoAvailabilityRepo(AvailabilityRepo):
-  def __init__(self, table_name: str, resource):
-    self.table_name = table_name
-    self.resource = resource
+  def __init__(self, table):
+    self.table = table
 
   def fetch(self, start, end=None, user_id=None) -> List[Availability]:
-    pass
+    key_cond = Key('available_at').gte(to_isodatetime(start))
+    if end:
+      key_cond = key_cond & Key('available_at').lt(to_isodatetime(end))
+
+    if user_id:
+      key_cond = key_cond & Key('user_id').eq(user_id)
+
+    response = self.table.query(KeyConditionExpression=key_cond)
+    availability = []
+    for item in response['Items']:
+      availability.append(availability_from_ddb_item(item))
+
+    return availability
+
 
   def create(self, availability: Availability):
-    pass
+    item = availability_to_ddb_item(availability)
+    self.table.put_item(Item=item)
+
+  def update(self, availability: Availability):
+    self.create(availability)
 
   def delete(self, availability: Availability):
-    pass
-
+    self.table.delete_item(Key={
+      "user_id": availability.user_id,
+      "available_at": to_isodatetime(availability.available_at)
+    })

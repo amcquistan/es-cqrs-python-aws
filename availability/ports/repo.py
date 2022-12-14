@@ -26,5 +26,9 @@ class AvailabilityRepo(ABC):
     pass
 
   @abstractmethod
+  def update(self, availability: Availability):
+    pass
+
+  @abstractmethod
   def delete(self, availability: Availability):
     pass

@@ -1,22 +1,40 @@
 import os
-from typing import Optional
 
 import boto3
 
 from pydantic import BaseSettings
 
-from availability.ports import EventStoreRepo
-from availability.adapters import DynamoEventStoreRepo
+from availability.ports import AvailabilityRepo, EventStoreRepo
+from availability.adapters import DynamoAvailabilityRepo, DynamoEventStoreRepo
 
 
 class AppContext(BaseSettings):
   env: str = "local"
   port: int = 8000
-  availability_channel: str = "availability"
-  appointments_channel: str = "appointments"
   aws_region: str = "us-east-1"
-  availability_event_store_table: str = "availability_event_store"
-  availability_read_model_table: str = "availability_read_model"
+  availability_event_store_table: str = "availability-event-store"
+  availability_read_model_table: str = "availability-read-model"
+
+  # This channel would be for events published and available for
+  # consumption by other bounded contexts
+  availability_channel: str = "availability"
+
+  # This channel is for use within this apps bounded context and should not be exposed
+  # to other bounded contexts because changes in event store schema would be immediately
+  # felt by consumers in other bounded contexts. It is for capturing state change
+  # events directly from the event store as in the via one of the following means:
+  # - DynamoDB change data capture to Kinesis stream
+  # - Published directly to via a producer in the app code after persisting to the event store 
+  # - Published to as part of the outbox pattern
+  availability_cdc_channel: str = "availability-cdc"
+
+  # used to track progress of kinesis consumer via checkpoints saved to DynamoDB
+  availability_consumer_table: str = "availability-consumer"
+
+  # This would be for subscribing to state change events in another bounded context
+  # responsible for the management of appointments
+  appointments_channel: str = "appointments"
+
   cache: dict = {}
 
   @property
@@ -30,12 +48,23 @@ class AppContext(BaseSettings):
     )
     return self.cache["event_store_repo"]
 
+  @property
+  def availability_repo(self) -> AvailabilityRepo:
+    if "availability_repo" in self.cache:
+      return self.cache["availability_repo"]
+
+    ddb = boto3.resource('dynamodb', region_name=self.aws_region)
+    self.cache["availability_repo"] = DynamoAvailabilityRepo(
+      ddb.Table(self.availability_read_model_table)
+    )
+    return self.cache["availability_repo"]
+
 
 def configure(**kwargs):
   """
-  Initializes a configurable AppContext which provides abstractions
-  to key software architectural layer boundaries like repositories,
-  messaging, http, and cli.
+  Initializes a configurable AppContext which provides settings and
+  abstractions to key software architectural layer boundaries like
+  repositories, messaging, http, and cli.
   """
   ssm_prefix = 'aws_ssm_'
   ssm_prefix_n = len(ssm_prefix)

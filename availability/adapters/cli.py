@@ -1,3 +1,13 @@
+"""
+Run as a module from the shell.
+
+Examples:
+
+  python -m availability.adapters.cli seed
+
+  python -m availability.adapters.cli show-aggregate --user-id abc123
+"""
+
 import json
 
 from argparse import ArgumentParser
@@ -15,10 +25,12 @@ from availability.domain import (
 from availability.service import AvailabilityCommandHandler
 from availability.utils import to_isodatetime, from_isodatetime
 
+from availability.adapters.event_processor import process_availability_events
+
 
 def seed(ctx: AppContext):
-  user_id1, user_id2 = "abc123", "xyz789"
-  user_n1, user_n2 = 12, 7
+  user_id1, user_id2 = "abc456", "qrs789"
+  user_n1, user_n2 = 5, 2
 
   now = datetime.now()
   start = datetime(now.year, now.month, now.day, now.hour)
@@ -94,25 +106,28 @@ def add_appointment(ctx: AppContext, user_id: str, available_at: str, appointmen
 
 
 if __name__ == '__main__':
-  """
-  Run as a module from the shell.
+  parser = ArgumentParser(
+    "python -m availability.adapters.cli",
+    description="Gives ability to drive this service from terminal by specifying one of the positional arguments as an operation followed by options where appropriate."
+  )
 
-  Examples:
+  SEED = 'seed'
+  CREATE_AVAILABILITY = 'create-availability'
+  DELETE_AVAILABILITY = 'delete-availability'
+  ADD_APPOINTMENT = 'add-appointment'
+  REMOVE_APPOINTMENT = 'remove-appointment'
+  SHOW_AGGREGATE = 'show-aggregate'
+  PROCESS_AVAILABILITY_EVENTS = 'process-availability-events'
 
-    python -m availability.adapters.cli seed
-
-    python -m availability.adapters.cli show-aggregate --user-id abc123
-  """
-  parser = ArgumentParser("Availability Microservice")
-  ops = [
-    'seed',
-    'create-availability',
-    'delete-availability',
-    'add-appointment',
-    'remove-appointment',
-    'show-aggregate'
-  ]
-  parser.add_argument('op', choices=ops)
+  parser.add_argument('op', choices=[
+    SEED,
+    CREATE_AVAILABILITY,
+    DELETE_AVAILABILITY,
+    ADD_APPOINTMENT,
+    REMOVE_APPOINTMENT,
+    SHOW_AGGREGATE,
+    PROCESS_AVAILABILITY_EVENTS,
+  ])
 
   parser.add_argument('--user-id')
   parser.add_argument('--available-at')
@@ -122,11 +137,19 @@ if __name__ == '__main__':
 
   ctx = configure()
 
-  if args.op == "seed":
+  if args.op == SEED:
     seed(ctx)
-  elif args.op == "show-aggregate":
+  elif args.op == SHOW_AGGREGATE:
     show_aggregate(ctx, args.user_id)
-  elif args.op == 'delete-availability':
+  elif args.op == DELETE_AVAILABILITY:
     delete_availability(ctx, args.user_id, args.available_at)
-  elif args.op == 'add-appointment':
+  elif args.op == ADD_APPOINTMENT:
     add_appointment(ctx, args.user_id, args.available_at, args.appointment_id)
+  elif args.op == PROCESS_AVAILABILITY_EVENTS:
+    # work around required due to MacOS process management issue
+    # https://github.com/borgstrom/offspring/issues/4
+    # https://github.com/NerdWalletOSS/kinesis-python/issues/14
+    import multiprocessing
+    multiprocessing.set_start_method("fork")
+
+    process_availability_events(ctx)

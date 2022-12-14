@@ -1,2 +1,3 @@
 boto3>=1.26.27,<2.0.0
 fastapi[all]>=0.85.1,<1.0
+kinesis-python>=0.2.1,<1.0

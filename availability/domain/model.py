@@ -5,7 +5,7 @@ from typing import List
 from uuid import uuid4
 
 from availability.domain.command import CreateAvailabilityCommand, DeleteAvailabilityCommand, AddAppointmentCommand, RemoveAppointmentCommand
-from availability.domain.exception import AggregateNotFoundException, AvailabilityExistsException, AvailabilityNotExistsException
+from availability.domain.exception import AvailabilityExistsException, AvailabilityNotExistsException
 from availability.domain.event import Event, AvailabilityCreatedEvent, AvailabilityDeletedEvent, AppointmentAddedEvent, AppointmentRemovedEvent
 
 
@@ -47,13 +47,13 @@ class UserAvailabilityAggregate:
       self.version = event.version
       data = event.event_payload
       common = {"correlation_id": event.correlation_id, "user_id": event.user_id, "available_at": data["available_at"]}
-      if event.event_type == 'AvailabilityCreatedEvent':
+      if event.event_type == AvailabilityCreatedEvent.__name__:
         self.add_availability(CreateAvailabilityCommand(appointment_id=data["appointment_id"], **common))
-      elif event.event_type == 'AvailabilityDeletedEvent':
+      elif event.event_type == AvailabilityDeletedEvent.__name__:
         self.delete_availability(DeleteAvailabilityCommand(**common))
-      elif event.event_type == 'AppointmentAddedEvent':
+      elif event.event_type == AppointmentAddedEvent.__name__:
         self.add_appointment(AddAppointmentCommand(appointment_id=data["appointment_id"], **common))
-      elif event.event_type == 'AppointmentRemovedEvent':
+      elif event.event_type == AppointmentRemovedEvent.__name__:
         self.remove_appointment(RemoveAppointmentCommand(**common))
     self.uncommitted_events.clear()
 
@@ -79,7 +79,7 @@ class UserAvailabilityAggregate:
       event_id=str(uuid4()),
       user_id=self.user_id,
       created=datetime.now(),
-      event_type='AvailabilityCreatedEvent',
+      event_type=AvailabilityCreatedEvent.__name__,
       event_payload=asdict(availability),
       correlation_id=cmd.correlation_id
     ))
@@ -98,7 +98,7 @@ class UserAvailabilityAggregate:
       event_id=str(uuid4()),
       user_id=self.user_id,
       created=datetime.now(),
-      event_type='AvailabilityDeletedEvent',
+      event_type=AvailabilityDeletedEvent.__name__,
       event_payload=asdict(availability),
       correlation_id=cmd.correlation_id
     ))
@@ -113,7 +113,7 @@ class UserAvailabilityAggregate:
       event_id=str(uuid4()),
       user_id=self.user_id,
       created=datetime.now(),
-      event_type='AppointmentAddedEvent',
+      event_type=AppointmentAddedEvent.__name__,
       event_payload=asdict(availability),
       correlation_id=cmd.correlation_id
     ))
@@ -128,7 +128,7 @@ class UserAvailabilityAggregate:
       event_id=str(uuid4()),
       user_id=self.user_id,
       created=datetime.now(),
-      event_type='AppointmentRemovedEvent',
+      event_type=AppointmentRemovedEvent.__name__,
       event_payload=asdict(availability),
       correlation_id=cmd.correlation_id
     ))
