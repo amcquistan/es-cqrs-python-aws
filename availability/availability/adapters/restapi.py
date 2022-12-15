@@ -105,6 +105,11 @@ def delete_availability(
   correlation_id: str = Header(alias='x-correlation-id')
 ):
   handler = AvailabilityCommandHandler(user_id, ctx.event_store_repo)
+  handler.delete_availability(DeleteAvailabilityCommand(
+    correlation_id=correlation_id,
+    user_id=user_id,
+    available_at=available_at
+  ))
 
 
 if __name__ == '__main__':
