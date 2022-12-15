@@ -3,7 +3,7 @@ import os
 
 import aws_cdk as cdk
 
-from availability_aws.infra_stack import InfraStack
+from aws.infra_stack import InfraStack
 
 
 app = cdk.App()
