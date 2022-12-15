@@ -26,6 +26,7 @@ from availability.service import AvailabilityCommandHandler
 from availability.utils import to_isodatetime, from_isodatetime
 
 from availability.adapters.event_processor import process_availability_events
+from availability.adapters.restapi import app
 
 
 def seed(ctx: AppContext):
@@ -126,7 +127,6 @@ if __name__ == '__main__':
     ADD_APPOINTMENT,
     REMOVE_APPOINTMENT,
     SHOW_AGGREGATE,
-    PROCESS_AVAILABILITY_EVENTS,
   ])
 
   parser.add_argument('--user-id')
@@ -145,11 +145,3 @@ if __name__ == '__main__':
     delete_availability(ctx, args.user_id, args.available_at)
   elif args.op == ADD_APPOINTMENT:
     add_appointment(ctx, args.user_id, args.available_at, args.appointment_id)
-  elif args.op == PROCESS_AVAILABILITY_EVENTS:
-    # work around required due to MacOS process management issue
-    # https://github.com/borgstrom/offspring/issues/4
-    # https://github.com/NerdWalletOSS/kinesis-python/issues/14
-    import multiprocessing
-    multiprocessing.set_start_method("fork")
-
-    process_availability_events(ctx)

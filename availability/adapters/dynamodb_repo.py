@@ -86,8 +86,17 @@ class DynamoAvailabilityRepo(AvailabilityRepo):
     for item in response['Items']:
       availability.append(availability_from_ddb_item(item))
 
-    return availability
+    while 'LastEvaluatedKey' in response:
+      last_key = response['LastEvaluatedKey']
+      key_cond = (
+        Key("user_id").eq(last_key['user_id']) &
+        Key('available_at').gt(last_key['version'])
+      )
+      response = self.table.query(KeyConditionExpression=key_cond)
+      for item in response['Items']:
+        availability.append(availability_from_ddb_item(item))
 
+    return availability
 
   def create(self, availability: Availability):
     item = availability_to_ddb_item(availability)

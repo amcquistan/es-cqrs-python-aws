@@ -1,2 +1,3 @@
 from availability.service.command_handlers import AvailabilityCommandHandler
-from availability.service.event_handlers import AvailabilityEventHandler, AvailabilityQueryHandler
+from availability.service.event_handlers import AvailabilityEventHandler
+from availability.service.query_service import AvailabilityQueryService

@@ -11,6 +11,7 @@ from availability.adapters import DynamoAvailabilityRepo, DynamoEventStoreRepo
 class AppContext(BaseSettings):
   env: str = "local"
   port: int = 8000
+  log_level: str = "info"
   aws_region: str = "us-east-1"
   availability_event_store_table: str = "availability-event-store"
   availability_read_model_table: str = "availability-read-model"
@@ -34,6 +35,8 @@ class AppContext(BaseSettings):
   # This would be for subscribing to state change events in another bounded context
   # responsible for the management of appointments
   appointments_channel: str = "appointments"
+
+  base_uri: str = "/api/v1"
 
   cache: dict = {}
 

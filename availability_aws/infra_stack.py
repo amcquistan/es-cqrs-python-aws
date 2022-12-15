@@ -26,7 +26,7 @@ class InfraStack(Stack):
     self.vpc = ec2.Vpc(self, 'vpc', max_azs=2)
     self.fargate = ecs.Cluster(self, 'fargate')
 
-    self.cdc_stream = kinesis.Stream(self, 'cdc-stream', stream_name='availability-cdc', shard_count=2)
+    self.cdc_stream = kinesis.Stream(self, 'cdc-stream', stream_name='availability-cdc', shard_count=1)
     self.availability_eventstore = ddb.Table(self, 'availability-eventstore',
       table_name='availability-event-store',
       partition_key=ddb.Attribute(name='user_id', type=ddb.AttributeType.STRING),

@@ -39,11 +39,3 @@ class AvailabilityEventHandler:
 
     else:
       log.warn(f"unknown event type {event.event_type}")
-
-
-class AvailabilityQueryHandler:
-  def __init__(self, availability_repo: AvailabilityRepo):
-    self.availability_repo = availability_repo
-
-  def handle(self, user_id: str = None, start: datetime = None, end: datetime = None):
-    pass
